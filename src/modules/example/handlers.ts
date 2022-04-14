@@ -1,13 +1,13 @@
 import { Request, Response } from "express";
 import { Restaurant } from "./domain/types";
 
-export interface RecommendationsHandlerDependencies {
+export interface Dependencies {
   getRecommendedRestaurants: () => Promise<Restaurant[]>;
 }
 
-export const recommendationsHandler = (
-  dependencies: RecommendationsHandlerDependencies,
-) => {
+export const createRecommendationsHandler = (
+  dependencies: Dependencies,
+): ((request: Request, response: Response) => void) => {
   const { getRecommendedRestaurants } = dependencies;
   return async (request: Request, response: Response) => {
     const restaurants = await getRecommendedRestaurants();

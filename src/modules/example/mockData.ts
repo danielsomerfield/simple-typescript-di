@@ -1,8 +1,4 @@
-import {
-  Restaurant,
-  RestaurantRating,
-  User,
-} from "./domain/types";
+import { Restaurant, RestaurantRating, User } from "./domain/types";
 
 export const restaurants: Restaurant[] = [
   {

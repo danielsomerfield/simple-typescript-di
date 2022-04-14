@@ -1,55 +1,40 @@
 import { Restaurant, RestaurantRating } from "./types";
 
-/**
- * By defining al the functions it depends on, the module has minimal concrete dependencies.
- * Because typescript has structural typing, we could eliminate all external dependencies, but
- * that seems like a bridge too far.
- */
-export interface RecommendationServiceDependencies {
+export interface Dependencies {
   findAllRatings: () => Promise<RestaurantRating[]>;
   getRestaurantById: (id: string) => Promise<Restaurant | undefined>;
-  calculateRestaurantRatings: (ratings: RestaurantRating[]) => number;
+  calculateOverallRating: (ratings: RestaurantRating[]) => number;
 }
 
-/**
- * Curried function serves as a factory for plugging in dependencies.
- * This allows for easy testing and the ability to keep functions narrow.
- */
-export const getRecommendedRestaurants = (
-  dependencies: RecommendationServiceDependencies,
-) => {
-  const { getRestaurantById, findAllRatings, calculateRestaurantRatings } =
-    dependencies;
+export const createRecommendedRestaurantsFinder =
+  (dependencies: Dependencies): (() => Promise<Restaurant[]>) =>
+  async () => {
+    const { getRestaurantById, findAllRatings, calculateOverallRating } =
+      dependencies;
+    const ratings: RestaurantRating[] = await findAllRatings();
+    const restaurantIdToRatings: [string, RestaurantRating[]][] =
+      await mapToRestaurants(ratings);
+    const restaurantIdToAggregateRating: [string, number][] =
+      restaurantIdToRatings.map(r => [r[0], calculateOverallRating(r[1])]);
+    const sorted = restaurantIdToAggregateRating.sort(
+      (r1, r2) => r1[1] - r2[1],
+    );
+    return (await Promise.all(
+      sorted
+        .map(r => getRestaurantById(r[0]))
+        .filter(r => r !== undefined),
+    )) as Restaurant[];
 
-  const mapToRestaurants = async (ratings: RestaurantRating[]) => {
-    const restaurantToRating = new Map<
-      string,
-      [Restaurant, RestaurantRating[]]
-    >();
-    for (const r of ratings) {
-      const restaurant = await getRestaurantById(r.restaurantId);
-      if (restaurant) {
+    async function mapToRestaurants(ratings: RestaurantRating[]) {
+      const restaurantToRating = new Map<string, RestaurantRating[]>();
+      for (const r of ratings) {
         const existingRestaurant = restaurantToRating.get(r.restaurantId);
         if (existingRestaurant) {
-          existingRestaurant[1].push(r);
+          existingRestaurant.push(r);
         } else {
-          restaurantToRating.set(r.restaurantId, [restaurant, [r]]);
+          restaurantToRating.set(r.restaurantId, [r]);
         }
       }
+      return Array.from(restaurantToRating);
     }
-    return Array.from(restaurantToRating);
   };
-
-  const compareRatings = (r1: RestaurantRating[], r2: RestaurantRating[]) => {
-    return calculateRestaurantRatings(r1) - calculateRestaurantRatings(r2);
-  };
-
-  return async (): Promise<Restaurant[]> => {
-    const ratings: RestaurantRating[] = await findAllRatings();
-    const restaurantToRating = await mapToRestaurants(ratings);
-    const sorted = restaurantToRating.sort((r1, r2) =>
-      compareRatings(r1[1][1], r2[1][1]),
-    );
-    return sorted.map(r => r[1][0]);
-  };
-};

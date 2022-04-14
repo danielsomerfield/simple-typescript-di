@@ -1,4 +1,4 @@
-import { restaurants, restaurantsById } from "../mockData";
+import { restaurantsById } from "../mockData";
 
 export interface RestaurantRepositoryDependencies {
   // This could have additional dependencies like configuration

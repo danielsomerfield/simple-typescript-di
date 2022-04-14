@@ -11,7 +11,8 @@
     "start:dev": "nodemon src/index.ts",
     "lint": "eslint . --ext .ts,.js --ignore-pattern node_modules",
     "test:unit": "jest --forceExit --no-cache --detectOpenHandles --testPathIgnorePatterns=.*integration.*\\.spec\\.ts",
-    "test:integration": "jest --forceExit --no-cache --detectOpenHandles --testPathPattern=.*integration.*\\.spec\\.ts"
+    "test:integration": "jest --forceExit --no-cache --detectOpenHandles --testPathPattern=.*integration.*\\.spec\\.ts",
+    "test:all": "jest --forceExit --no-cache --detectOpenHandles"
   },
   "author": "Daniel Somerfield",
   "license": "PROPRIETARY",

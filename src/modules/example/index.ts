@@ -1,6 +1,6 @@
 import { Express } from "express";
-import { recommendationsHandler, RecommendationsHandlerDependencies } from "./handlers";
-import { getRecommendedRestaurants, RecommendationServiceDependencies } from "./domain/recommendationService";
+import * as handlers from "./handlers";
+import { createRecommendedRestaurantsFinder } from "./domain/recommendationService";
 import { ratingsRepository } from "./repositories/ratingsRepository";
 import { restaurantRepository } from "./repositories/restaurantRepository";
 import { calculateRating } from "./domain/ratingAlgorithm";
@@ -17,24 +17,19 @@ const init = async (app: Express) => {
   /**
    * Dependencies are bound at the function level, rather than at the type level
    * so developers have to make a conscious decision when adding a new dependency rather than just
-   * using it "because it's there.
+   * using it "because it's there".
    */
-  const recommendationServiceDependencies: RecommendationServiceDependencies = {
+  const recommendedRestaurantsFinder = createRecommendedRestaurantsFinder({
     findAllRatings: ratingsRepo.findAllRatings,
     getRestaurantById: restaurantRepo.getRestaurantById,
-    calculateRestaurantRatings: calculateRating,
-  };
-
-  const recommendationsHandlerDependencies: RecommendationsHandlerDependencies =
-    {
-      getRecommendedRestaurants: getRecommendedRestaurants(
-        recommendationServiceDependencies,
-      ),
-    };
+    calculateOverallRating: calculateRating,
+  });
 
   app.get(
     "/restaurants/recommended",
-    recommendationsHandler(recommendationsHandlerDependencies),
+    handlers.createRecommendationsHandler({
+      getRecommendedRestaurants: recommendedRestaurantsFinder,
+    }),
   );
 };
 
